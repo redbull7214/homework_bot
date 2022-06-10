@@ -5,6 +5,14 @@ import logging
 import sys
 import telegram
 from dotenv import load_dotenv
+from http import HTTPStatus
+
+
+class SendMessageError(Exception):
+    """Исключения при отправки сообщений в телеграмм."""
+
+    pass
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -43,6 +51,7 @@ def send_message(bot, message):
         logger.info(f'Сообщение удачно отправлено в чат:{TELEGRAM_CHAT_ID}.')
     except Exception as error:
         logging.error(f'Сбой при отправке сообщения в Telegram:{error}.')
+        raise SendMessageError
 
 
 def get_api_answer(current_timestamp):
@@ -50,54 +59,62 @@ def get_api_answer(current_timestamp):
     timestamp = current_timestamp or int(time.time())
     params = {'from_date': timestamp}
     try:
+        logger.info('Выполнение запроса к API')
         response = requests.get(ENDPOINT, headers=HEADERS, params=params)
-        if response.status_code != 200:
-            logging.error(
-                f'Эндпоинт недоступен, статус ответа:{response.status_code}.')
-            return 'Ошибка в ответе API'
-
-        response = response.json()
-        return response
     except Exception as error:
-        logging.error(f'Эндпоинт недоступен:{error}.')
+        logging.error(f'Ошибка при запросе к API {error}')
+        raise ConnectionError
+
+    if response.status_code == HTTPStatus.OK:
+        response = response.json()
+        logger.info('Запрос успешно выполнен')
+        return response
+    else:
+        logging.error(
+            f'Эндпоинт недоступен, статус ответа:{response.status_code}.')
+        raise ConnectionError
 
 
 def check_response(response):
     """Проверка ответа от API."""
-    if response == {}:
-        logging.error('Передан пустой словарь')
+    # if response == {}:
+    #     logging.error('Передан пустой словарь')
     if type(response) != dict:
-        logging.error('Неверный тип данных')
+        logging.error(f'Передан неверный тип данных {type(response)}')
+        raise TypeError
     try:
-        homeworks = response.get('homeworks')
+        homeworks = response['homeworks']
 
-        return homeworks
-    except Exception as error:
-        logging.error(f'Сбой при обработке сообщения:{error}.')
+    except KeyError as ex:
+        logging.error(f'Сбой при обращении к словарю {ex}')
+        raise KeyError
+    if type(homeworks) != list:
+        logging.error(f'Передан неверный тип данных {type(homeworks)}')
+        raise TypeError
+    return homeworks
 
 
 def parse_status(homework):
     """Получение информации о статусе домашней работы."""
-    homework_name = homework.get('homework_name')
-    if homework_name is None:
-        logging.error(f'Ошибка получения названия домашней работы:{homework}.')
-        return f'Ошибка получения названия в работе {homework}'
-
-    homework_status = homework.get('status')
-
-    if homework_status is None:
+    try:
+        homework_name = homework['homework_name']
+    except KeyError as ex:
         logging.error(
-            f'Ошибка получения статуса домашней работы:{homework_name}.')
+            f'Сбой при обращении к ключам словаря "homework_name" {ex}')
+        raise KeyError
 
-        return f'Ошибка определения статуса работы: {homework_name}'
+    try:
+        homework_status = homework['status']
+    except KeyError as ex:
+        logging.error(f'Сбой при обращении к ключам словаря "status" {ex}')
+        raise KeyError
 
-    verdict = HOMEWORK_STATUSES.get(homework_status)
-    if verdict is None:
-
+    try:
+        verdict = HOMEWORK_STATUSES[homework_status]
+    except KeyError as ex:
         logging.error(
-            f'Ошибка в ключах словаря "HOMEWORK_STATUSES":{homework_name}')
-
-        return f'Ошибка при определении статуса работы: {homework_name}'
+            f'Сбой при обращении к ключам словаря "homework_status" {ex}')
+        raise KeyError
 
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
@@ -134,7 +151,9 @@ def main():
                 response = get_api_answer(current_timestamp)
                 homeworks = check_response(response)
                 for homework in homeworks:
+
                     message = parse_status(homework)
+
                     send_message(bot, message)
                 current_timestamp = int(time.time())
                 time.sleep(RETRY_TIME)
