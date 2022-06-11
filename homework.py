@@ -78,7 +78,6 @@ def check_response(response):
         raise KeyError(
             logging.error(f'Сбой при обращении к словарю {ex}'))
     if type(homeworks) != list:
-
         raise TypeError(
             logging.error(f'Передан неверный тип данных {type(homeworks)}'))
     return homeworks
