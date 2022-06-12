@@ -45,20 +45,18 @@ def get_api_answer(current_timestamp):
     """Функция отправляющая запрос к API."""
     timestamp = current_timestamp or int(time.time())
     params = {'from_date': timestamp}
+    data = {'url': ENDPOINT, 'headers': HEADERS, 'params': params}
     try:
         logger.info('Выполнение запроса к API')
-        response = requests.get(ENDPOINT, headers=HEADERS, params=params)
+        response = requests.get(**data)
     except Exception as error:
-
         raise ConnectionError(
             logging.error(f'Ошибка при запросе к API {error}'))
-
     if response.status_code == HTTPStatus.OK:
         response = response.json()
         logger.info('Запрос успешно выполнен')
         return response
     else:
-
         raise HTTPStatusError(
             logging.error(
                 f'Эндпоинт недоступен, статус ответа:{response.status_code}.'))
@@ -67,14 +65,11 @@ def get_api_answer(current_timestamp):
 def check_response(response):
     """Проверка ответа от API."""
     if type(response) != dict:
-
         raise TypeError(
             logging.error(f'Передан неверный тип данных {type(response)}'))
     try:
         homeworks = response['homeworks']
-
     except KeyError as ex:
-
         raise KeyError(
             logging.error(f'Сбой при обращении к словарю {ex}'))
     if type(homeworks) != list:
@@ -88,23 +83,18 @@ def parse_status(homework):
     try:
         homework_name = homework['homework_name']
     except KeyError as ex:
-
         raise KeyError(
             logging.error(
                 f'Сбой при обращении к ключам словаря "homework_name" {ex}'))
-
     try:
         homework_status = homework['status']
     except KeyError as ex:
-
         raise KeyError(
             logging.error(
                 f'Сбой при обращении к ключам словаря "status" {ex}'))
-
     try:
         verdict = HOMEWORK_STATUSES[homework_status]
     except KeyError as ex:
-
         raise KeyError(
             logging.error(
                 f'Сбой при обращении к ключам словаря "homework_status" {ex}'))
