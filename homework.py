@@ -10,6 +10,17 @@ from exceptions import (
     SendMessageError, HTTPStatusError, TokensError
 )
 
+logging.basicConfig(
+    level=logging.INFO,
+    filename='program.log',
+    format='%(asctime)s, %(levelname)s, %(message)s, %(name)s'
+)
+logger = logging.getLogger(__name__)
+handler = logging.StreamHandler(sys.stdout)
+logger.setLevel(logging.INFO)
+formatter = logging.Formatter("%(asctime)s - %(message)s")
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 load_dotenv()
 
@@ -137,16 +148,20 @@ def main():
 
 if __name__ == '__main__':
 
-    logging.basicConfig(
-        level=logging.INFO,
-        filename='program.log',
-        format='%(asctime)s, %(levelname)s, %(message)s, %(name)s'
-    )
-    logger = logging.getLogger(__name__)
-    handler = logging.StreamHandler(sys.stdout)
-    logger.setLevel(logging.INFO)
-    formatter = logging.Formatter("%(asctime)s - %(message)s")
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
+    # Если я пытаюсь спрятать логирование от импорта, то проект не проходит
+    # пайтест, хотя логирование при этом работает...
+    # Каким образом это лучше сделать?
+
+    # logging.basicConfig(
+    #     level=logging.INFO,
+    #     filename='program.log',
+    #     format='%(asctime)s, %(levelname)s, %(message)s, %(name)s'
+    # )
+    # logger = logging.getLogger(__name__)
+    # handler = logging.StreamHandler(sys.stdout)
+    # logger.setLevel(logging.INFO)
+    # formatter = logging.Formatter("%(asctime)s - %(message)s")
+    # handler.setFormatter(formatter)
+    # logger.addHandler(handler)
 
     main()
