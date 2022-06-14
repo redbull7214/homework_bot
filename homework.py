@@ -62,7 +62,7 @@ def get_api_answer(current_timestamp):
         response = requests.get(**data)
     except Exception as error:
         raise ConnectionError(
-            logging.error(f'Ошибка при запросе к API {error}'))
+            logging.error(f'Ошибка запроса к API {error}. Параметры {data}'))
     if response.status_code == HTTPStatus.OK:
         response = response.json()
         logger.info('Запрос успешно выполнен')
@@ -70,7 +70,8 @@ def get_api_answer(current_timestamp):
     else:
         raise HTTPStatusError(
             logging.error(
-                f'Эндпоинт недоступен, статус ответа:{response.status_code}.'))
+                (f'Эндпоинт недоступен, статус ответа:{response.status_code}. '
+                 f'Параметры: {data}. {response.reason} {response.text}')))
 
 
 def check_response(response):
@@ -115,9 +116,7 @@ def parse_status(homework):
 
 def check_tokens():
     """Функция проверки доступности всех переменных окружения."""
-    if all([TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, PRACTICUM_TOKEN]):
-        return True
-    return False
+    return all([TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, PRACTICUM_TOKEN])
 
 
 def main():
